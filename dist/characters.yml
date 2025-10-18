@@ -1,0 +1,35 @@
+# 人物基础数值配置
+characters:
+  # 攻击型角色示例
+  角色A:
+    base_type: attack  # 攻击型
+    base_value: 2000   # 基础攻击力
+    base_crit_rate: 0.05  # 基础暴击率 5%
+    base_crit_dmg: 0.50   # 基础暴击伤害 50%
+    base_dmg_bonus: 0.0   # 基础伤害加成 0%
+    skill_multiplier: 2.5  # 技能倍率 250%
+
+  角色B:
+    base_type: attack
+    base_value: 2500
+    base_crit_rate: 0.10
+    base_crit_dmg: 0.60
+    base_dmg_bonus: 0.15
+    skill_multiplier: 3.0  # 技能倍率 300%
+
+  # 生命型角色示例
+  角色C:
+    base_type: hp  # 生命型
+    base_value: 15000  # 基础生命值
+    base_crit_rate: 0.05
+    base_crit_dmg: 0.50
+    base_dmg_bonus: 0.0
+    skill_multiplier: 0.08  # 技能倍率 8% (生命型通常转化率较低)
+
+  角色D:
+    base_type: hp
+    base_value: 20000
+    base_crit_rate: 0.08
+    base_crit_dmg: 0.55
+    base_dmg_bonus: 0.10
+    skill_multiplier: 0.10  # 技能倍率 10%

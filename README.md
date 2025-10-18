@@ -52,7 +52,18 @@
 
 ## 使用方法
 
-### 方式1：图形界面（推荐）
+### 方式1：运行打包好的 EXE（最简单）
+
+如果你已经有打包好的可执行文件：
+
+```bash
+# 双击运行
+伤害计算器.exe
+```
+
+确保 `characters.yml` 配置文件与 EXE 在同一目录下。
+
+### 方式2：图形界面（开发环境）
 
 ```bash
 python ui.py
@@ -75,7 +86,7 @@ python ui.py
    - 再显示最优方案的详细装备配置
    - 包含完整的伤害计算过程
 
-### 方式2：命令行
+### 方式2：命令行（开发环境）
 
 ```bash
 python main.py
@@ -83,13 +94,54 @@ python main.py
 
 按提示输入角色编号或名称即可。
 
-### 方式3：批量测试
+### 方式3：批量测试（开发环境）
 
 ```bash
 python test.py
 ```
 
 自动计算配置文件中所有角色的最优方案。
+
+## 打包成 EXE
+
+如果你想自己打包程序，有以下几种方法：
+
+### 快速打包（推荐）
+
+**Windows 批处理：**
+```bash
+build.bat
+```
+
+**Python 脚本：**
+```bash
+python build.py
+```
+
+### 手动打包
+
+使用 PyInstaller：
+```bash
+pyinstaller --name=伤害计算器 --onefile --windowed --clean --noconfirm --add-data="characters.yml;." ui.py
+```
+
+打包完成后，在 `dist/` 目录下会生成：
+- `伤害计算器.exe` - 可执行文件
+- 需要手动复制 `characters.yml` 到 dist 目录
+
+详细的打包说明请参考 [BUILD_GUIDE.md](BUILD_GUIDE.md)。
+
+## 文件说明
+
+- [main.py](main.py) - 核心计算逻辑（命令行版本）
+- [ui.py](ui.py) - 图形界面版本
+- [test.py](test.py) - 批量测试脚本
+- [characters.yml](characters.yml) - 角色配置文件
+- [requirements.txt](requirements.txt) - Python依赖
+- [build.py](build.py) - Python 打包脚本
+- [build.bat](build.bat) - Windows 批处理打包脚本
+- [damage_calculator.spec](damage_calculator.spec) - PyInstaller 配置文件
+- [BUILD_GUIDE.md](BUILD_GUIDE.md) - 详细打包指南
 
 ## 角色配置文件格式
 
