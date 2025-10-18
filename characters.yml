@@ -4,16 +4,18 @@ characters:
   角色A:
     base_type: attack  # 攻击型
     base_value: 2000   # 基础攻击力
+    base_multiplier: 0.0  # 基础倍率加成 0% (与装备%同乘区)
     base_crit_rate: 0.05  # 基础暴击率 5%
-    base_crit_dmg: 0.50   # 基础暴击伤害 50%
+    base_crit_dmg: 1.50   # 总暴击伤害 150% (默认50% + 装备100%)
     base_dmg_bonus: 0.0   # 基础伤害加成 0%
     skill_multiplier: 2.5  # 技能倍率 250%
 
   角色B:
     base_type: attack
     base_value: 2500
+    base_multiplier: 0.2  # 基础倍率加成 20%
     base_crit_rate: 0.10
-    base_crit_dmg: 0.60
+    base_crit_dmg: 1.60  # 总暴击伤害 160%
     base_dmg_bonus: 0.15
     skill_multiplier: 3.0  # 技能倍率 300%
 
@@ -21,15 +23,17 @@ characters:
   角色C:
     base_type: hp  # 生命型
     base_value: 15000  # 基础生命值
+    base_multiplier: 0.0  # 基础倍率加成 0%
     base_crit_rate: 0.05
-    base_crit_dmg: 0.50
+    base_crit_dmg: 1.50  # 总暴击伤害 150%
     base_dmg_bonus: 0.0
     skill_multiplier: 0.08  # 技能倍率 8% (生命型通常转化率较低)
 
   角色D:
     base_type: hp
     base_value: 20000
+    base_multiplier: 0.15  # 基础倍率加成 15%
     base_crit_rate: 0.08
-    base_crit_dmg: 0.55
+    base_crit_dmg: 1.55  # 总暴击伤害 155%
     base_dmg_bonus: 0.10
     skill_multiplier: 0.10  # 技能倍率 10%

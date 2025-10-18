@@ -2,13 +2,15 @@
 最优伤害词条计算器
 
 伤害计算公式：
-(base * (1 + x%) + y) * (1 + 伤害加成z%) * (1 + (暴击率 * 爆伤加成)) * 技能倍率
+(base * (1 + x% + base_multiplier) + y) * (1 + 伤害加成z%) * (1 + 暴击率 * (总爆伤 - 1)) * 技能倍率
 
 说明：
 - base: 基础攻击力或基础生命值
-- x%: 攻击百分比或生命百分比
+- x%: 攻击百分比或生命百分比（来自装备）
+- base_multiplier: 基础倍率加成（来自角色天赋、命座等，与x%同乘区相加）
 - y: 固定攻击或固定生命
 - z%: 伤害加成百分比
+- 总爆伤: 总暴击伤害（如150% = 1.5），期望计算时用 (总爆伤 - 1)
 - 技能倍率: 角色技能的伤害倍率
 """
 
@@ -37,8 +39,9 @@ class Character:
     name: str
     base_type: str  # 'attack' 或 'hp'
     base_value: float  # 基础攻击力或生命值
+    base_multiplier: float  # 基础倍率加成（与装备%同乘区）
     base_crit_rate: float  # 基础暴击率
-    base_crit_dmg: float  # 基础暴击伤害
+    base_crit_dmg: float  # 总暴击伤害（如1.5表示150%）
     base_dmg_bonus: float  # 基础伤害加成
     skill_multiplier: float  # 技能倍率
 
@@ -52,7 +55,7 @@ class Stats:
     flat_hp: float  # 固定生命
     percent_hp: float  # 生命百分比
     crit_rate: float  # 暴击率
-    crit_dmg: float  # 暴击伤害
+    crit_dmg: float  # 总暴击伤害
     dmg_bonus: float  # 伤害加成
 
 
@@ -87,6 +90,7 @@ def load_character(character_name: str) -> Character:
         name=character_name,
         base_type=char_data['base_type'],
         base_value=char_data['base_value'],
+        base_multiplier=char_data.get('base_multiplier', 0.0),  # 默认0%
         base_crit_rate=char_data['base_crit_rate'],
         base_crit_dmg=char_data['base_crit_dmg'],
         base_dmg_bonus=char_data['base_dmg_bonus'],
@@ -132,29 +136,35 @@ def calculate_stats(character: Character, equipments: List[Equipment]) -> Stats:
 def calculate_damage(character: Character, stats: Stats) -> float:
     """
     计算期望伤害
-    公式：(base * (1 + x%) + y) * (1 + 伤害加成z%) * (1 + (暴击率 * 爆伤加成)) * 技能倍率
+    公式：(base * (1 + x% + base_multiplier) + y) * (1 + 伤害加成z%) * (1 + 暴击率 * (总爆伤 - 1)) * 技能倍率
+
+    base_multiplier 与装备百分比属于同一乘区，相加计算
+    总爆伤：输入的是总暴击伤害（如150% = 1.5），期望计算时用 (总爆伤 - 1)
     """
     # 根据角色类型确定 base, x%, y
     if character.base_type == 'attack':
         base = stats.base_value  # 基础攻击
-        x_percent = stats.percent_attack  # 攻击%
+        x_percent = stats.percent_attack  # 攻击%（来自装备）
         y = stats.flat_attack  # 固定攻击
     else:  # hp
         base = stats.base_value  # 基础生命
-        x_percent = stats.percent_hp  # 生命%
+        x_percent = stats.percent_hp  # 生命%（来自装备）
         y = stats.flat_hp  # 固定生命
 
-    # 第一部分：(base * (1 + x%) + y)
-    part1 = base * (1 + x_percent) + y
+    # 第一部分：(base * (1 + x% + base_multiplier) + y)
+    # 注意：base_multiplier 与 x% 属于同一乘区，相加计算
+    part1 = base * (1 + x_percent + character.base_multiplier) + y
 
     # 第二部分：* (1 + 伤害加成z%)
     part2 = 1 + stats.dmg_bonus
 
-    # 第三部分：* (1 + (暴击率 * 爆伤加成))
+    # 第三部分：* (1 + 暴击率 * (总爆伤 - 1))
     # 期望伤害：普通伤害 * (1 - 暴击率) + 暴击伤害 * 暴击率
-    # = 普通伤害 * (1 + 暴击率 * 爆伤)
+    # = 普通伤害 * (1 - 暴击率) + 普通伤害 * 总爆伤 * 暴击率
+    # = 普通伤害 * (1 - 暴击率 + 总爆伤 * 暴击率)
+    # = 普通伤害 * (1 + 暴击率 * (总爆伤 - 1))
     crit_rate = min(stats.crit_rate, 1.0)  # 暴击率上限100%
-    part3 = 1 + (crit_rate * stats.crit_dmg)
+    part3 = 1 + crit_rate * (stats.crit_dmg - 1)
 
     # 第四部分：* 技能倍率
     part4 = character.skill_multiplier

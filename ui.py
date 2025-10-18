@@ -89,16 +89,22 @@ class DamageCalculatorUI:
         ttk.Label(config_frame, text="(攻击力或生命值)").grid(row=row, column=2, sticky=tk.W)
 
         row += 1
+        ttk.Label(config_frame, text="基础倍率加成:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.base_mult_var = tk.StringVar(value="0.0")
+        ttk.Entry(config_frame, textvariable=self.base_mult_var, width=20).grid(row=row, column=1, sticky=tk.W, pady=5)
+        ttk.Label(config_frame, text="(例: 0.2 = 20%，与装备%同乘区)").grid(row=row, column=2, sticky=tk.W)
+
+        row += 1
         ttk.Label(config_frame, text="基础暴击率:").grid(row=row, column=0, sticky=tk.W, pady=5)
         self.crit_rate_var = tk.StringVar(value="0.05")
         ttk.Entry(config_frame, textvariable=self.crit_rate_var, width=20).grid(row=row, column=1, sticky=tk.W, pady=5)
         ttk.Label(config_frame, text="(例: 0.05 = 5%)").grid(row=row, column=2, sticky=tk.W)
 
         row += 1
-        ttk.Label(config_frame, text="基础暴击伤害:").grid(row=row, column=0, sticky=tk.W, pady=5)
-        self.crit_dmg_var = tk.StringVar(value="0.50")
+        ttk.Label(config_frame, text="总暴击伤害:").grid(row=row, column=0, sticky=tk.W, pady=5)
+        self.crit_dmg_var = tk.StringVar(value="1.50")
         ttk.Entry(config_frame, textvariable=self.crit_dmg_var, width=20).grid(row=row, column=1, sticky=tk.W, pady=5)
-        ttk.Label(config_frame, text="(例: 0.50 = 50%)").grid(row=row, column=2, sticky=tk.W)
+        ttk.Label(config_frame, text="(例: 1.5 = 150%)").grid(row=row, column=2, sticky=tk.W)
 
         row += 1
         ttk.Label(config_frame, text="基础伤害加成:").grid(row=row, column=0, sticky=tk.W, pady=5)
@@ -159,8 +165,9 @@ class DamageCalculatorUI:
             self.name_var.set(char_name)
             self.type_var.set(char_data.get('base_type', 'attack'))
             self.base_value_var.set(str(char_data.get('base_value', 2000)))
+            self.base_mult_var.set(str(char_data.get('base_multiplier', 0.0)))
             self.crit_rate_var.set(str(char_data.get('base_crit_rate', 0.05)))
-            self.crit_dmg_var.set(str(char_data.get('base_crit_dmg', 0.50)))
+            self.crit_dmg_var.set(str(char_data.get('base_crit_dmg', 1.50)))
             self.dmg_bonus_var.set(str(char_data.get('base_dmg_bonus', 0.0)))
             self.skill_mult_var.set(str(char_data.get('skill_multiplier', 2.5)))
 
@@ -171,6 +178,7 @@ class DamageCalculatorUI:
                 name=self.name_var.get(),
                 base_type=self.type_var.get(),
                 base_value=float(self.base_value_var.get()),
+                base_multiplier=float(self.base_mult_var.get()),
                 base_crit_rate=float(self.crit_rate_var.get()),
                 base_crit_dmg=float(self.crit_dmg_var.get()),
                 base_dmg_bonus=float(self.dmg_bonus_var.get()),
@@ -319,6 +327,7 @@ class DamageCalculatorUI:
             self.characters[character.name] = {
                 'base_type': character.base_type,
                 'base_value': character.base_value,
+                'base_multiplier': character.base_multiplier,
                 'base_crit_rate': character.base_crit_rate,
                 'base_crit_dmg': character.base_crit_dmg,
                 'base_dmg_bonus': character.base_dmg_bonus,
