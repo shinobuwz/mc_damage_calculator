@@ -6,7 +6,7 @@
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import yaml
-from main import Character, find_best_combination, calculate_stats, calculate_damage
+from main import Character, find_best_combination, calculate_stats, calculate_damage, calculate_next_affix_gain
 
 
 class DamageCalculatorUI:
@@ -118,9 +118,46 @@ class DamageCalculatorUI:
         ttk.Entry(config_frame, textvariable=self.skill_mult_var, width=20).grid(row=row, column=1, sticky=tk.W, pady=5)
         ttk.Label(config_frame, text="(例: 2.5 = 250%)").grid(row=row, column=2, sticky=tk.W)
 
+        # ===== 词条统计面板 =====
+        affix_frame = ttk.LabelFrame(main_frame, text="词条统计", padding="10")
+        affix_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+
+        # 创建词条统计表格
+        affix_types = [
+            ("暴击", "0.093", "crit_rate"),
+            ("爆伤", "0.186", "crit_dmg"),
+            ("生命/攻击百分比", "0.101", "percent"),
+            ("伤害加成", "0.101", "dmg_bonus"),
+            ("生命固定值", "510", "flat_hp"),
+            ("攻击固定值", "40", "flat_atk")
+        ]
+
+        # 表头
+        ttk.Label(affix_frame, text="类型", font=("", 9, "bold")).grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(affix_frame, text="词条数", font=("", 9, "bold")).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Label(affix_frame, text="平均值", font=("", 9, "bold")).grid(row=0, column=2, padx=5, pady=5)
+
+        # 存储词条输入框变量
+        self.affix_vars = {}
+
+        # 创建每一行
+        for i, (label, default_avg, var_name) in enumerate(affix_types, start=1):
+            ttk.Label(affix_frame, text=label).grid(row=i, column=0, sticky=tk.W, padx=5, pady=2)
+
+            # 词条数输入
+            count_var = tk.StringVar(value="4")
+            ttk.Entry(affix_frame, textvariable=count_var, width=10).grid(row=i, column=1, padx=5, pady=2)
+
+            # 平均值输入
+            avg_var = tk.StringVar(value=default_avg)
+            ttk.Entry(affix_frame, textvariable=avg_var, width=15).grid(row=i, column=2, padx=5, pady=2)
+
+            # 保存变量
+            self.affix_vars[var_name] = {"count": count_var, "avg": avg_var}
+
         # 按钮区
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=1, column=0, columnspan=2, pady=10)
+        button_frame.grid(row=2, column=0, columnspan=2, pady=10)
 
         ttk.Button(button_frame, text="计算最优方案", command=self.calculate,
                   width=20).pack(side=tk.LEFT, padx=5)
@@ -131,8 +168,8 @@ class DamageCalculatorUI:
 
         # ===== 结果显示区 =====
         result_frame = ttk.LabelFrame(main_frame, text="计算结果", padding="10")
-        result_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
-        main_frame.rowconfigure(2, weight=1)
+        result_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
+        main_frame.rowconfigure(3, weight=1)
 
         self.result_text = scrolledtext.ScrolledText(result_frame, wrap=tk.WORD,
                                                      width=80, height=20, font=("Consolas", 9))
@@ -171,10 +208,27 @@ class DamageCalculatorUI:
             self.dmg_bonus_var.set(str(char_data.get('base_dmg_bonus', 0.0)))
             self.skill_mult_var.set(str(char_data.get('skill_multiplier', 2.5)))
 
+    def get_affix_stats(self):
+        """从词条统计获取额外属性"""
+        try:
+            affix_stats = {}
+            for var_name, vars_dict in self.affix_vars.items():
+                count = int(vars_dict["count"].get())
+                avg = float(vars_dict["avg"].get())
+                affix_stats[var_name] = {
+                    "count": count,
+                    "avg": avg,
+                    "total": count * avg
+                }
+            return affix_stats
+        except ValueError as e:
+            messagebox.showerror("输入错误", f"词条统计数据格式错误:\n{e}")
+            return None
+
     def get_character(self):
         """从表单获取角色对象"""
         try:
-            return Character(
+            character = Character(
                 name=self.name_var.get(),
                 base_type=self.type_var.get(),
                 base_value=float(self.base_value_var.get()),
@@ -184,6 +238,29 @@ class DamageCalculatorUI:
                 base_dmg_bonus=float(self.dmg_bonus_var.get()),
                 skill_multiplier=float(self.skill_mult_var.get())
             )
+
+            # 获取词条统计并添加到角色属性
+            affix_stats = self.get_affix_stats()
+            if affix_stats is None:
+                return None
+
+            # 将词条属性加到基础属性上
+            character.base_crit_rate += affix_stats["crit_rate"]["total"]
+            character.base_crit_dmg += affix_stats["crit_dmg"]["total"]
+            character.base_dmg_bonus += affix_stats["dmg_bonus"]["total"]
+
+            # 根据角色类型,添加百分比和固定值
+            if character.base_type == 'attack':
+                character.base_multiplier += affix_stats["percent"]["total"]
+                # 固定攻击会在伤害计算时加上
+            else:  # hp
+                character.base_multiplier += affix_stats["percent"]["total"]
+                # 固定生命会在伤害计算时加上
+
+            # 保存词条统计到角色对象,用于后续展示
+            character.affix_stats = affix_stats
+
+            return character
         except ValueError as e:
             messagebox.showerror("输入错误", f"请检查输入的数值格式是否正确\n{e}")
             return None
@@ -266,6 +343,40 @@ class DamageCalculatorUI:
         self.result_text.insert(tk.END, f"技能倍率：{character.skill_multiplier * 100:.1f}%\n")
         self.result_text.insert(tk.END, "="*70 + "\n\n")
 
+        # 显示词条统计
+        if hasattr(character, 'affix_stats'):
+            self.result_text.insert(tk.END, "当前词条统计：\n")
+            self.result_text.insert(tk.END, f"{'类型':<15} {'词条数':<8} {'平均值':<12} {'总计'}\n")
+            self.result_text.insert(tk.END, "-" * 55 + "\n")
+
+            affix_labels = {
+                "crit_rate": "暴击",
+                "crit_dmg": "爆伤",
+                "percent": "生命/攻击百分比" if character.base_type == 'hp' else "生命/攻击百分比",
+                "dmg_bonus": "伤害加成",
+                "flat_hp": "生命固定值",
+                "flat_atk": "攻击固定值"
+            }
+
+            for key, label in affix_labels.items():
+                if key in character.affix_stats:
+                    stats = character.affix_stats[key]
+                    count = stats['count']
+                    avg = stats['avg']
+                    total = stats['total']
+
+                    # 格式化显示
+                    if key in ['crit_rate', 'crit_dmg', 'percent', 'dmg_bonus']:
+                        avg_str = f"{avg*100:.1f}%"
+                        total_str = f"{total*100:.1f}%"
+                    else:
+                        avg_str = f"{avg:.0f}"
+                        total_str = f"{total:.0f}"
+
+                    self.result_text.insert(tk.END, f"{label:<15} {count:<8} {avg_str:<12} {total_str}\n")
+
+            self.result_text.insert(tk.END, "\n")
+
         self.result_text.insert(tk.END, f"最优装备组合：{result['combination']}\n\n")
         self.result_text.insert(tk.END, "装备详情：\n")
         for i, eq in enumerate(result['equipments'], 1):
@@ -303,6 +414,44 @@ class DamageCalculatorUI:
         self.result_text.insert(tk.END, f"  期望伤害 = {base_dmg:.2f} × {dmg_bonus_multiplier:.2f} × {crit_multiplier:.2f} × {character.skill_multiplier:.2f}\n")
         self.result_text.insert(tk.END, f"  期望伤害：{result['damage']:.2f}\n")
         self.result_text.insert(tk.END, "="*70 + "\n\n")
+
+        # 计算并显示下一个词条的收益率
+        if hasattr(character, 'affix_stats'):
+            self.result_text.insert(tk.END, "下一个词条收益率分析：\n")
+            self.result_text.insert(tk.END, "-" * 70 + "\n")
+
+            # 准备词条平均值字典
+            affix_avg_values = {key: val['avg'] for key, val in character.affix_stats.items()}
+
+            # 计算收益率
+            gains = calculate_next_affix_gain(character, stats, affix_avg_values)
+
+            # 按收益率排序
+            sorted_gains = sorted(gains.items(), key=lambda x: x[1]['gain_rate'], reverse=True)
+
+            self.result_text.insert(tk.END, f"{'词条类型':<15} {'平均值':<12} {'伤害提升':<15} {'收益率'}\n")
+            self.result_text.insert(tk.END, "-" * 70 + "\n")
+
+            for label, gain_info in sorted_gains:
+                avg_val = gain_info['avg_value']
+                dmg_inc = gain_info['damage_increase']
+                gain_rate = gain_info['gain_rate']
+
+                # 格式化平均值显示
+                if label in ['暴击', '爆伤', '伤害加成', '攻击百分比', '生命百分比']:
+                    avg_str = f"{avg_val*100:.1f}%"
+                else:
+                    avg_str = f"{avg_val:.0f}"
+
+                self.result_text.insert(tk.END, f"{label:<15} {avg_str:<12} {dmg_inc:<15.2f} {gain_rate:>6.2f}%\n")
+
+            self.result_text.insert(tk.END, "\n")
+
+            # 显示最优词条建议
+            if sorted_gains:
+                best_affix = sorted_gains[0]
+                self.result_text.insert(tk.END, f"建议优先堆叠: {best_affix[0]} (收益率: {best_affix[1]['gain_rate']:.2f}%)\n")
+                self.result_text.insert(tk.END, "="*70 + "\n\n")
 
         # 滚动到顶部
         self.result_text.see(1.0)

@@ -130,6 +130,11 @@ def calculate_stats(character: Character, equipments: List[Equipment]) -> Stats:
         elif eq.sub_stat_type == '固定生命':
             stats.flat_hp += eq.sub_stat_value
 
+    # 添加来自词条的固定值
+    if hasattr(character, 'affix_stats'):
+        stats.flat_attack += character.affix_stats.get('flat_atk', {}).get('total', 0)
+        stats.flat_hp += character.affix_stats.get('flat_hp', {}).get('total', 0)
+
     return stats
 
 
@@ -171,6 +176,67 @@ def calculate_damage(character: Character, stats: Stats) -> float:
 
     damage = part1 * part2 * part3 * part4
     return damage
+
+
+def calculate_next_affix_gain(character: Character, stats: Stats, affix_avg_values: dict) -> dict:
+    """
+    计算每种词条增加一个平均值时的收益率
+
+    Args:
+        character: 角色对象
+        stats: 当前属性
+        affix_avg_values: 词条平均值字典，格式: {"crit_rate": 0.093, "crit_dmg": 0.186, ...}
+
+    Returns:
+        各词条的收益率字典
+    """
+    from copy import deepcopy
+
+    current_damage = calculate_damage(character, stats)
+    gains = {}
+
+    # 测试各种词条
+    affix_tests = [
+        ("暴击", "crit_rate", lambda s, v: setattr(s, 'crit_rate', s.crit_rate + v)),
+        ("爆伤", "crit_dmg", lambda s, v: setattr(s, 'crit_dmg', s.crit_dmg + v)),
+        ("伤害加成", "dmg_bonus", lambda s, v: setattr(s, 'dmg_bonus', s.dmg_bonus + v)),
+    ]
+
+    # 根据角色类型添加百分比和固定值测试
+    if character.base_type == 'attack':
+        affix_tests.extend([
+            ("攻击百分比", "percent", lambda s, v: setattr(s, 'percent_attack', s.percent_attack + v)),
+            ("攻击固定值", "flat_atk", lambda s, v: setattr(s, 'flat_attack', s.flat_attack + v)),
+        ])
+    else:
+        affix_tests.extend([
+            ("生命百分比", "percent", lambda s, v: setattr(s, 'percent_hp', s.percent_hp + v)),
+            ("生命固定值", "flat_hp", lambda s, v: setattr(s, 'flat_hp', s.flat_hp + v)),
+        ])
+
+    for label, key, modifier in affix_tests:
+        if key not in affix_avg_values:
+            continue
+
+        # 创建临时stats副本
+        temp_stats = deepcopy(stats)
+        avg_value = affix_avg_values[key]
+
+        # 应用修改
+        modifier(temp_stats, avg_value)
+
+        # 计算新伤害
+        new_damage = calculate_damage(character, temp_stats)
+
+        # 计算收益率
+        gain_rate = (new_damage - current_damage) / current_damage * 100
+        gains[label] = {
+            "avg_value": avg_value,
+            "damage_increase": new_damage - current_damage,
+            "gain_rate": gain_rate
+        }
+
+    return gains
 
 
 def find_best_combination(character: Character, verbose: bool = False):
