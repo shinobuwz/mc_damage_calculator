@@ -20,14 +20,14 @@ characters:
     skill_multiplier: 3.0  # 技能倍率 300%
 
   # 生命型角色示例
-  角色C:
+  守岸人延奏:
     base_type: hp  # 生命型
-    base_value: 15000  # 基础生命值
-    base_multiplier: 0.0  # 基础倍率加成 0%
-    base_crit_rate: 0.05
+    base_value: 16712  # 基础生命值
+    base_multiplier: 0.12  # 专武12%
+    base_crit_rate: 1  # 必定暴击
     base_crit_dmg: 1.50  # 总暴击伤害 150%
     base_dmg_bonus: 0.0
-    skill_multiplier: 0.08  # 技能倍率 8% (生命型通常转化率较低)
+    skill_multiplier: 0.1964*3  # 技能倍率 
 
   角色D:
     base_type: hp
