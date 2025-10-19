@@ -21,6 +21,43 @@ class DamageCalculatorUI:
         # 创建界面
         self.create_widgets()
 
+    def get_display_width(self, text):
+        """计算字符串的显示宽度(中文字符算2个宽度,英文算1个)"""
+        width = 0
+        for char in str(text):
+            if ord(char) > 127:  # 中文等宽字符
+                width += 2
+            else:  # 英文、数字、符号
+                width += 1
+        return width
+
+    def pad_string(self, text, total_width, align='left'):
+        """
+        根据显示宽度对齐字符串
+
+        Args:
+            text: 要对齐的文本
+            total_width: 总显示宽度
+            align: 对齐方式 'left', 'right', 'center'
+        """
+        text = str(text)
+        current_width = self.get_display_width(text)
+        padding_needed = total_width - current_width
+
+        if padding_needed <= 0:
+            return text
+
+        if align == 'left':
+            return text + ' ' * padding_needed
+        elif align == 'right':
+            return ' ' * padding_needed + text
+        elif align == 'center':
+            left_pad = padding_needed // 2
+            right_pad = padding_needed - left_pad
+            return ' ' * left_pad + text + ' ' * right_pad
+
+        return text
+
     def load_characters(self):
         """加载角色配置"""
         try:
@@ -347,8 +384,14 @@ class DamageCalculatorUI:
         # 显示词条统计
         if hasattr(character, 'affix_stats'):
             self.result_text.insert(tk.END, "当前词条统计：\n")
-            self.result_text.insert(tk.END, f"{'类型':<15} {'词条数':<8} {'平均值':<12} {'总计'}\n")
-            self.result_text.insert(tk.END, "-" * 55 + "\n")
+
+            # 表头
+            header = (self.pad_string("类型", 20) +
+                     self.pad_string("词条数", 10, 'center') +
+                     self.pad_string("平均值", 16, 'center') +
+                     self.pad_string("总计", 16, 'right'))
+            self.result_text.insert(tk.END, header + "\n")
+            self.result_text.insert(tk.END, "-" * 62 + "\n")
 
             affix_labels = {
                 "crit_rate": "暴击",
@@ -374,7 +417,12 @@ class DamageCalculatorUI:
                         avg_str = f"{avg:.0f}"
                         total_str = f"{total:.0f}"
 
-                    self.result_text.insert(tk.END, f"{label:<15} {count:<8} {avg_str:<12} {total_str}\n")
+                    # 使用对齐函数
+                    row = (self.pad_string(label, 20) +
+                          self.pad_string(str(count), 10, 'center') +
+                          self.pad_string(avg_str, 16, 'center') +
+                          self.pad_string(total_str, 16, 'right'))
+                    self.result_text.insert(tk.END, row + "\n")
 
             self.result_text.insert(tk.END, "\n")
 
@@ -430,8 +478,13 @@ class DamageCalculatorUI:
             # 按收益率排序
             sorted_gains = sorted(gains.items(), key=lambda x: x[1]['gain_rate'], reverse=True)
 
-            self.result_text.insert(tk.END, f"{'词条类型':<15} {'平均值':<12} {'伤害提升':<15} {'收益率'}\n")
-            self.result_text.insert(tk.END, "-" * 70 + "\n")
+            # 表头
+            header = (self.pad_string("词条类型", 20) +
+                     self.pad_string("平均值", 16, 'center') +
+                     self.pad_string("伤害提升", 16, 'right') +
+                     self.pad_string("收益率", 14, 'right'))
+            self.result_text.insert(tk.END, header + "\n")
+            self.result_text.insert(tk.END, "-" * 66 + "\n")
 
             for label, gain_info in sorted_gains:
                 avg_val = gain_info['avg_value']
@@ -444,7 +497,15 @@ class DamageCalculatorUI:
                 else:
                     avg_str = f"{avg_val:.0f}"
 
-                self.result_text.insert(tk.END, f"{label:<15} {avg_str:<12} {dmg_inc:<15.2f} {gain_rate:>6.2f}%\n")
+                dmg_inc_str = f"{dmg_inc:.2f}"
+                gain_rate_str = f"{gain_rate:.2f}%"
+
+                # 使用对齐函数
+                row = (self.pad_string(label, 20) +
+                      self.pad_string(avg_str, 16, 'center') +
+                      self.pad_string(dmg_inc_str, 16, 'right') +
+                      self.pad_string(gain_rate_str, 14, 'right'))
+                self.result_text.insert(tk.END, row + "\n")
 
             self.result_text.insert(tk.END, "\n")
 
