@@ -39,11 +39,12 @@ class DamageCalculatorUI:
         # 配置行列权重
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=0)  # 词条统计列固定宽度
 
         # ===== 左侧：角色配置区 =====
         config_frame = ttk.LabelFrame(main_frame, text="角色配置", padding="10")
-        config_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N), pady=(0, 10))
+        config_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N), padx=(0, 10))
 
         # 选择模式
         ttk.Label(config_frame, text="配置模式:").grid(row=0, column=0, sticky=tk.W, pady=5)
@@ -118,9 +119,9 @@ class DamageCalculatorUI:
         ttk.Entry(config_frame, textvariable=self.skill_mult_var, width=20).grid(row=row, column=1, sticky=tk.W, pady=5)
         ttk.Label(config_frame, text="(例: 2.5 = 250%)").grid(row=row, column=2, sticky=tk.W)
 
-        # ===== 词条统计面板 =====
+        # ===== 右侧：词条统计面板 =====
         affix_frame = ttk.LabelFrame(main_frame, text="词条统计", padding="10")
-        affix_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        affix_frame.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N))
 
         # 创建词条统计表格
         affix_types = [
@@ -133,7 +134,7 @@ class DamageCalculatorUI:
         ]
 
         # 表头
-        ttk.Label(affix_frame, text="类型", font=("", 9, "bold")).grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(affix_frame, text="类型", font=("", 9, "bold")).grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
         ttk.Label(affix_frame, text="词条数", font=("", 9, "bold")).grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(affix_frame, text="平均值", font=("", 9, "bold")).grid(row=0, column=2, padx=5, pady=5)
 
@@ -146,18 +147,18 @@ class DamageCalculatorUI:
 
             # 词条数输入
             count_var = tk.StringVar(value="4")
-            ttk.Entry(affix_frame, textvariable=count_var, width=10).grid(row=i, column=1, padx=5, pady=2)
+            ttk.Entry(affix_frame, textvariable=count_var, width=8).grid(row=i, column=1, padx=5, pady=2)
 
             # 平均值输入
             avg_var = tk.StringVar(value=default_avg)
-            ttk.Entry(affix_frame, textvariable=avg_var, width=15).grid(row=i, column=2, padx=5, pady=2)
+            ttk.Entry(affix_frame, textvariable=avg_var, width=12).grid(row=i, column=2, padx=5, pady=2)
 
             # 保存变量
             self.affix_vars[var_name] = {"count": count_var, "avg": avg_var}
 
         # 按钮区
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=2, column=0, columnspan=2, pady=10)
+        button_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
         ttk.Button(button_frame, text="计算最优方案", command=self.calculate,
                   width=20).pack(side=tk.LEFT, padx=5)
@@ -168,8 +169,8 @@ class DamageCalculatorUI:
 
         # ===== 结果显示区 =====
         result_frame = ttk.LabelFrame(main_frame, text="计算结果", padding="10")
-        result_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
-        main_frame.rowconfigure(3, weight=1)
+        result_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(10, 0))
+        main_frame.rowconfigure(2, weight=1)
 
         self.result_text = scrolledtext.ScrolledText(result_frame, wrap=tk.WORD,
                                                      width=80, height=20, font=("Consolas", 9))
